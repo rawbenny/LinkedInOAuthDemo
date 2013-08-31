@@ -1,0 +1,100 @@
+<html>
+	<head>
+		<title>OAuthSimple w/ LinkedIn</title>
+		<script src="OAuthSimple.js"></script>
+		<script>
+			/*
+			
+				You must edit the two following lines and put in your consumer key and shared secret
+			
+			*/
+			var consumer_key = "247fmvid6e8k";
+			var shared_secret = "4WWHRnj9YbTsw4cr";
+			var callbackUrl = "http://127.0.0.1:8080";
+			callbackUrl="oob";
+			
+			
+			/*
+				
+				Nothing below here needs to be edited for the demo to operate
+				
+			*/
+		
+			var oauth_info = {};
+			var oauth = OAuthSimple(consumer_key, shared_secret);
+			
+			function parse_response(response, callback) {
+				response.replace(new RegExp("([^?=&]+)(=([^&]*))?", "g"), function($0, $1, $2, $3) { oauth_info[$1] = $3; });
+				callback.call();
+			}
+			
+			function authorize_url() {
+				set_url("https://www.linkedin.com/uas/oauth/authenticate?oauth_token=" + oauth_info.oauth_token, document.getElementById("au"));
+			}
+			
+			function access_token_url(pin) {
+				oauth.reset();		
+				var url = oauth.sign({action: "GET", path: "https://api.linkedin.com/uas/oauth/accessToken", parameters: {oauth_verifier: pin}, signatures: oauth_info}).signed_url;
+				
+				set_url(url, document.getElementById("at"));
+			}
+			
+			function fetch_profile_url() {
+				oauth.reset();	
+				var sourceUrl = document.getElementById("source-url").value;
+				var parameters = document.getElementById("parameters").value;
+				var action = document.getElementById("action").value;
+
+
+				
+				// var url = oauth.sign({action: "GET", path: "https://api.linkedin.com/v1/people/id=EG_luONkYW/network/updates?scope=self", signatures: oauth_info}).signed_url;
+				var url = oauth.sign({action: action, path: sourceUrl, parameters:parameters,signatures: oauth_info}).signed_url;
+				//http://api.linkedin.com/v1/people/id=EG_luONkYW/network/updates?scope=self
+				//http://api.linkedin.com/v1/people/~/network/updates
+				//http://api.linkedin.com/v1/people/~/network/network-stats
+				set_url(url, document.getElementById("fp"));
+			}
+			
+			function set_url(url, element) {
+				element.value = url;
+				
+				var span = document.createElement("span");
+				span.innerHTML = "&nbsp;&nbsp;<a href='" + url + "' target='_blank'>Open</a>";
+				element.parentNode.insertBefore(span, element.nextSibling);
+			}
+			
+			window.onload = function() {
+				var url = oauth.sign({action: "GET", path: "https://api.linkedin.com/uas/oauth/requestToken", parameters: {oauth_callback: callbackUrl}}).signed_url;
+				
+				set_url(url, document.getElementById("rt"));
+			}
+		</script>
+	</head>
+	<body>
+		<h1>OAuthSimple w/ LinkedIn</h1>
+		<label for="rt">Request Token URL:</label> <input type="text" size="100" name="rt" id="rt">
+		<br><br>
+		<label for="rtr">Request Token Response:</label><br><textarea rows="5" cols="75" name="rtr" id="rtr"></textarea>
+		<br>
+		<button onclick="javascript:parse_response(document.getElementById('rtr').value, authorize_url)">Parse Response</button>
+		<br><br>
+		<label for="au">Authorize URL:</label> <input type="text" size="100" name="au" id="au">
+		<br><br>
+		<label for="vp">Verifier PIN Code:</label> <input type="text" size="100" name="vp" id="vp">
+		<button onclick="javascript:access_token_url(document.getElementById('vp').value)">Get Access Token URL</button>
+		<br><br>
+		<label for="at">Access Token URL:</label> <input type="text" size="100" name="at" id="at">
+		<br><br>
+		<label for="atr">Access Token Response:</label><br><textarea rows="5" cols="75" name="atr" id="atr">oauth_token=3cf77abd-87d8-49f0-b6a8-974a7356c511&oauth_token_secret=cce314a0-1b34-4e5f-85d8-d8f516bcbf6f&oauth_expires_in=5183981&oauth_authorization_expires_in=5183981</textarea>
+		<br>
+		<button onclick="javascript:parse_response(document.getElementById('atr').value, fetch_profile_url)">Parse Response</button>Set Action, Source URL and Parameters below and click <b>Parse Response</b>
+		<br><br>
+		Action:<input id="action" style="width:500px;" value="GET"></input>GET or POST
+		<br><br>
+		Source URL:<input id="source-url" style="width:500px;" value="http://api.linkedin.com/v1/people/~/connections"></input>The LinkedIn API, find more on linkedin developer site.
+		<br><br>
+		Parameters:<input id="parameters" style="width:500px;" value="count=10"></input>count=10&a=1&b=2
+		<br><br>
+		<label for="fp">Fetch Profile URL:</label> <input type="text" size="100" name="fp" id="fp">
+	</body>
+</html>
